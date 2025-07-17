@@ -1,0 +1,21 @@
+services:
+  web:
+    build: .
+    image: tbeadle/bingo-card-creator:0.1
+    env_file: spotify-app.env
+    volumes:
+      - ./src:/app
+      - static:/static/
+      - db:/var/db/
+  nginx:
+    image: nginx:1.29.0-alpine
+    ports:
+      - 443:443
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+      - static:/static/:ro
+
+volumes:
+  static:
+  db:

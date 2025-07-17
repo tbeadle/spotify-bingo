@@ -1,0 +1,9 @@
+[project]
+name = "spotify-bingo"
+version = "0.1.0"
+dependencies = [
+    "django",
+    "spotipy",
+    "gunicorn>=23.0.0",
+]
+requires-python = ">=3.11"
