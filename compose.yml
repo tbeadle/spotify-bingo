@@ -1,3 +1,6 @@
+x-env: &env
+  CERT_NAME: letsencrypt
+
 services:
   web:
     build: .
@@ -9,13 +12,32 @@ services:
       - db:/var/db/
   nginx:
     image: nginx:1.29.0-alpine
+    environment: *env
+    depends_on:
+      - certbot
     ports:
       - 443:443
     volumes:
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./nginx/certs:/etc/nginx/certs:ro
+      - ./nginx/templates/:/etc/nginx/templates/:ro
+      - ./nginx/docker-entrypoint.d/wait-for-cert.sh:/docker-entrypoint.d/40-wait-for-cert.sh:ro
+      - ./nginx/docker-entrypoint.d/fix-cert-perms.sh:/docker-entrypoint.d/41-fix-cert-perms.sh:ro
+      - ./nginx/docker-entrypoint.d/schedule-reload.sh:/docker-entrypoint.d/42-schedule-reload.sh:ro
       - static:/static/:ro
+      - letsencrypt:/etc/letsencrypt/
+  certbot:
+    image: certbot/certbot:v4.1.1
+    environment: *env
+    env_file: spotify-app.env
+    ports:
+      - 80:80
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - trap exit TERM; while :; do certbot certonly -d $${FQDN} --non-interactive --standalone --agree-tos --cert-name $${CERT_NAME}; sleep 12h & wait $${!}; done;
+    volumes:
+      - letsencrypt:/etc/letsencrypt/
 
 volumes:
   static:
   db:
+  letsencrypt:
